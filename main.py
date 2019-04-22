@@ -10,7 +10,7 @@ from dateutil import parser
 
 CONFIG = "config.ini"
 
-
+# ParsedReplay holds all needed information about each run that has been parsed
 class ParsedReplay:
     def __init__(self):
         self.version = 0
@@ -35,6 +35,7 @@ class ParsedReplay:
         self.bugged = False
         self.bugged_reason = ""
 
+    # A simple way to output useful data when debugging :)
     def __str__(self):
         return("Date: {}, Seed: {}, Char: {}, Type: {}, EndZone: {}, RunTime: {}, KeyPresses: {}".format(
             self.run_date,
@@ -46,7 +47,7 @@ class ParsedReplay:
             self.key_presses
         ))
 
-
+# This function setups up the database if it doesn't exist
 def setup_database(db):
     try:
         conn = sqlite3.connect(db)
@@ -120,8 +121,9 @@ def setup_database(db):
         return conn
     except Exception as e:
         print("Error: {}".format(e))
+        sys.exit()
 
-
+# This function configures where the replays are located if not default and writes it to the config file
 def setup_replay_folder(r_folder, config):
     if not os.path.exists(r_folder):
         try:
@@ -136,7 +138,14 @@ def setup_replay_folder(r_folder, config):
     else:
         return r_folder
 
+# This function gets the hashes from the database so we don't write old replays to the db
+def get_run_hashes(db):
+    c = db.cursor()
+    c.execute("SELECT r.f_hash FROM runs")
+    hashes = c.fetchall()
+    return hashes
 
+# This functions gets the listing of files needed to be parsed
 def get_files(replays):
     try:
         files = os.listdir(replays)
@@ -144,7 +153,7 @@ def get_files(replays):
     except Exception as e:
         print("Could not get replay files: {}".format(e))
 
-
+# This functions acts as a case statement for character's formatted name because Python :)
 def get_char_name(c):
     switcher = {
         0: "Cadence",
@@ -164,7 +173,7 @@ def get_char_name(c):
     }
     return switcher.get(c, "Unknown")
 
-
+# This functions acts as a case statement for the formatted run type because Python :)
 def get_type_name(t):
     t = int(t)
     switcher = {
@@ -195,7 +204,7 @@ def get_type_name(t):
 
     return switcher.get(t, "Unknown")
 
-
+# This functions returns the zone that the replay ended on
 def get_end_zone(songs, char, t, replay):
     if not replay.amplified_full:
         print("Too lazy to code non-amplified full release")
@@ -230,7 +239,7 @@ def get_end_zone(songs, char, t, replay):
 
     return(replay)
 
-
+# This functions returns the formatted run time as seen as the end screen in game
 def get_time_from_replay(ms_time):
 
     if ms_time < 0:
@@ -247,6 +256,7 @@ def get_time_from_replay(ms_time):
 
     return time_to_return
 
+# This functions returns the number of keys pressed during a run, because why not
 def get_key_presses(songs, data, replay):
     if songs < 0:
         return 0
@@ -254,7 +264,8 @@ def get_key_presses(songs, data, replay):
     for i in range(0, songs):
         keys += int(data[(i+1)*11])
     return keys
-       
+
+# This functions calculates the seed based off the first floor seed       
 def calculate_seed(zone_1_seed, amplified):
     # seed.add(0x40005e47).times(0xd6ee52a).mod(0x7fffffff).mod(0x713cee3f);
     add1 = int("0x40005e47", 16)
@@ -272,7 +283,7 @@ def calculate_seed(zone_1_seed, amplified):
     else:
         print("Not calculating this seed: {}".format(zone_1_seed))
 
-
+# This functions does all the heavy lifting and is where all replay parsing happens
 def parse_files(r_folder, r_files):
     for r_f in r_files:
         try:
@@ -320,20 +331,28 @@ def parse_files(r_folder, r_files):
         except Exception as e:
             print("Couldn't parse file: {} -> {}".format(r_f, e))
 
-# Pretty much everything was figured out by Grimy and/or AlexisYJ. Anything that looks complicated was them. Probably the simple stuff too
+# Pretty much everything was figured out by Grimy and/or AlexisYJ. Anything that looks complicated was them. Probably the simple stuff too :)
 def main():
+    # Grab the config data
     config = ConfigParser()
     config.read(CONFIG)
     dbfile = config.get('DEFAULT', 'DATABASE_FILE')
     replay_folder = config.get('DEFAULT', 'REPLAY_FOLDER')
 
+    # Setup the db connection
     db = setup_database(dbfile)
 
+    # Get hashes for runs from the db
+    run_hashes = get_run_hashes(db)
+
+    # Setup the replay folder/files 
     replay_folder = setup_replay_folder(replay_folder, config)
     replay_files = get_files(replay_folder)
 
+    # Parse the replay files
     parse_files(replay_folder, replay_files)
 
+    # Save any new runs to the db
 
 if __name__ == "__main__":
     sys.exit(main())
