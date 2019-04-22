@@ -5,8 +5,9 @@ import sqlite3
 import sys
 from configparser import ConfigParser
 from tkinter import filedialog
-
+import hashlib
 from dateutil import parser
+from datetime import datetime
 
 CONFIG = "config.ini"
 
@@ -20,10 +21,12 @@ class ParsedReplay:
         self.file = ""
         self.f_hash = 0
         self.run_date = ""
+        self.f_run_date = ""
         self.run_type = 0
         self.f_run_type = ""
         self.char = 0
         self.f_char = ""
+        self.players = 0
         self.seed = 0
         self.songs = 0
         self.end_zone = -1
@@ -31,9 +34,13 @@ class ParsedReplay:
         self.run_time = 0
         self.f_run_time = ""
         self.key_presses = 0
+        self.score = 0
+        self.killed_by = 0
+        self.f_killed_by = ""
         self.win = False
         self.bugged = False
         self.bugged_reason = ""
+        self.imported_date = ""
 
     # A simple way to output useful data when debugging :)
     def __str__(self):
@@ -55,7 +62,7 @@ def setup_database(db):
         bugged = """
             CREATE TABLE IF NOT EXISTS bugged (
             id            INTEGER PRIMARY KEY ASC ON CONFLICT ABORT AUTOINCREMENT NOT NULL ON CONFLICT ABORT UNIQUE ON CONFLICT ABORT,
-            run_id        INTEGER REFERENCES run (run_id),
+            run_id        INTEGER REFERENCES run (id),
             bugged_reason TEXT,
             bugged_data   TEXT
         );
@@ -65,17 +72,15 @@ def setup_database(db):
             CREATE TABLE IF NOT EXISTS run (
             id             INTEGER  PRIMARY KEY ASC ON CONFLICT ABORT AUTOINCREMENT NOT NULL ON CONFLICT ABORT UNIQUE ON CONFLICT ABORT,
             version        INTEGER,
-            amplified      INTEGER,
-            amplified_full INTEGER,
+            amplified      BOOLEAN,
+            amplified_full BOOLEAN,
             folder         TEXT,
             file           TEXT,
-            hash           INTEGER,
+            f_hash         INTEGER,
             run_date       INTEGER,
-            f_run_date     INTEGER
+            f_run_date     INTEGER,
             run_type       INTEGER,
             f_run_type     TEXT,
-            time           INTEGER,
-            f_time         TEXT,
             seed           INTEGER,
             songs          INTEGER,
             end_zone       TEXT,
@@ -83,7 +88,7 @@ def setup_database(db):
             f_run_time     TEXT,
             players        INTEGER,
             char1          INTEGER,
-            win            INTEGER,
+            win            BOOLEAN,
             killed_by      INTEGER,
             f_killed_by    TEXT,
             key_presses    INTEGER,
@@ -95,18 +100,26 @@ def setup_database(db):
         run_tag = """
             CREATE TABLE IF NOT EXISTS run_tag (
             id     INTEGER PRIMARY KEY ASC ON CONFLICT ABORT AUTOINCREMENT NOT NULL ON CONFLICT ABORT UNIQUE ON CONFLICT ABORT,
-            run_id INTEGER REFERENCES run (run_id),
-            tag_id INTEGER REFERENCES tag (tag_id)
+            run_id INTEGER REFERENCES run (id),
+            tag_id INTEGER REFERENCES tag (id)
         );
         """
 
         tag = """
             CREATE TABLE IF NOT EXISTS tag (
-            id      INTEGER PRIMARY KEY ASC ON CONFLICT ABORT AUTOINCREMENT NOT NULL ON CONFLICT ABORT UNIQUE ON CONFLICT ABORT,
-            name   TEXT,
-            color  TEXT
+            id        INTEGER PRIMARY KEY ASC ON CONFLICT ABORT AUTOINCREMENT NOT NULL ON CONFLICT ABORT UNIQUE ON CONFLICT ABORT,
+            name      TEXT UNIQUE ON CONFLICT ABORT,
+            color     TEXT,
+            color_hex TEXT
         );
         """
+
+        tag_data = [
+            ("Win", "Green", "#3CB371"),
+            ("Death By Enemy", "Red", "#FA8072"),
+            ("Death By Curse", "Grey", "#708090")
+        ]
+
         c = conn.cursor()
         c.execute("SELECT name FROM sqlite_master WHERE type='table'")
         test = c.fetchall()
@@ -117,8 +130,11 @@ def setup_database(db):
             c.execute(tag)
             c.execute(bugged)
             c.execute(run_tag)
-
+            c.executemany('INSERT INTO tag (name, color, color_hex) values (?, ?, ?)', tag_data)
+            conn.commit()
+            
         return conn
+
     except Exception as e:
         print("Error: {}".format(e))
         sys.exit()
@@ -140,10 +156,21 @@ def setup_replay_folder(r_folder, config):
 
 # This function gets the hashes from the database so we don't write old replays to the db
 def get_run_hashes(db):
+    hashes = []
     c = db.cursor()
-    c.execute("SELECT r.f_hash FROM runs")
-    hashes = c.fetchall()
+    c.execute("SELECT r.f_hash FROM run r")
+    for run_hash in c.fetchall():
+        hashes.append(run_hash[0])
     return hashes
+
+# This functions gets all the current tags from the database
+def get_tags(db):
+    tags = {}
+    c = db.cursor()
+    c.execute("SELECT t.id, t.name, t.color, t.color_hex FROM tag t")
+    for tag in c.fetchall():
+        tags[tag[0]] = tag
+    return tags
 
 # This functions gets the listing of files needed to be parsed
 def get_files(replays):
@@ -265,6 +292,98 @@ def get_key_presses(songs, data, replay):
         keys += int(data[(i+1)*11])
     return keys
 
+# This function saves a replay to the database
+def save_run(run, db):
+    
+    try:
+        # run_id = -1 
+        # bugged_id = -1
+        # tag_id = -1
+        # runtag_id = -1 
+
+        c = db.cursor()
+        run_sql = """
+        INSERT INTO run 
+        (
+            version,
+            amplified,
+            amplified_full,
+            folder,
+            file,
+            f_hash,
+            run_date,
+            f_run_date,
+            run_type,
+            f_run_type,
+            seed,
+            songs,
+            end_zone,
+            run_time,
+            f_run_time,
+            players,
+            char1,
+            win,
+            killed_by,
+            f_killed_by,
+            key_presses,
+            score,
+            imported_date
+        )
+        VALUES
+        (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+        ;
+        """
+        run_data = [
+            (
+                run.version,
+                True if run.amplified else False,
+                True if run.amplified_full else False,
+                run.folder,
+                run.file,
+                run.f_hash,
+                run.run_date,
+                run.f_run_date,
+                run.run_type,
+                run.f_run_type,
+                run.seed,
+                run.songs,
+                run.f_end_zone,
+                run.run_time,
+                run.f_run_time,
+                run.players,
+                run.char,
+                run.win,
+                run.killed_by,
+                run.f_killed_by,
+                run.key_presses,
+                run.score,
+                run.imported_date
+            )
+        ]
+        c.executemany(run_sql, run_data)
+        
+        # Save the id of the last inserted row as the run_id
+        # run_id = c.lastrowid
+
+        
+        
+        # If the run was bugged, make a note of it
+        # if run.bugged:
+        #     c.execute("hehe insert bugged stuff")
+        #     bugged_id = c.lastrowid
+        
+        # Insert the tag information
+        # c.execute("hehe do the tag stuff")
+        # tag_id = c.lastrowid
+
+        #if run_id > 0 and tag_id > 0:
+        #     c.execute("hehe add the runtag stuffs")
+        #     runtag_id = c.lastrowid
+
+        db.commit()
+    except Exception as e:
+        print("Couldn't insert run: {}, {}/{}\n{}".format(run.f_hash, run.folder, run.file, e))
+
 # This functions calculates the seed based off the first floor seed       
 def calculate_seed(zone_1_seed, amplified):
     # seed.add(0x40005e47).times(0xd6ee52a).mod(0x7fffffff).mod(0x713cee3f);
@@ -284,8 +403,9 @@ def calculate_seed(zone_1_seed, amplified):
         print("Not calculating this seed: {}".format(zone_1_seed))
 
 # This functions does all the heavy lifting and is where all replay parsing happens
-def parse_files(r_folder, r_files):
+def parse_files(r_folder, r_files, hashes, tags, db):
     for r_f in r_files:
+        
         try:
             p_file = ParsedReplay()
             print("Parsing: \"{}/{}\"".format(r_folder, r_f))
@@ -296,40 +416,50 @@ def parse_files(r_folder, r_files):
             version = int(split_name[0])
             amp = True if version > 75 else False
             amp_full = True if version > 84 else False
-            dt = "{} {}".format(
-                "/".join(split_name[3:6:]), ":".join(split_name[6:9]))
+            dt = parser.parse("{} {}".format(
+                "/".join(split_name[3:6:]), ":".join(split_name[6:9])))
+            f_dt = "{}/{}/{} {}:{}".format(dt.year, dt.month, dt.day, dt.hour, dt.minute)
             t = int(split_name[9])
             coop = True if int(split_data[8]) > 1 else False
             char = int(split_data[12].split("|")[0])
+            players = int(split_data[8])
             seed = int(split_data[7])
             songs = int(int(split_data[6]))
             run_time = int(split_data[5])
-            
+            run_hash = hashlib.md5("{}/{} {}".format(r_folder, r_f, char).encode()).hexdigest()
             if not coop:
                 p_file.version = version
                 p_file.amplified = amp
                 p_file.amplified_full = amp_full
                 p_file.folder = r_folder
                 p_file.file = r_f
-                p_file.f_hash = hash("{}/{}".format(r_folder, r_f))
-                p_file.run_date = parser.parse(dt)
+                p_file.f_hash = run_hash
+                p_file.run_date = dt
+                p_file.f_run_date = f_dt
                 p_file.run_type = t
                 p_file.f_run_type = get_type_name(t)
                 p_file.char = char
                 p_file.f_char = get_char_name(char)
+                p_file.players = players
                 p_file.seed = calculate_seed(seed, amp)
                 p_file.songs = songs
                 p_file.run_time = run_time
                 p_file.f_run_time = get_time_from_replay(run_time)
                 p_file = get_end_zone(songs, char, t, p_file)
                 p_file.key_presses = get_key_presses(songs, split_data, p_file)
+                p_file.imported_date = datetime.now()
                 #print(p_file.__dict__)
                 print(p_file)
+                if run_hash not in hashes:
+                    
+                    save_run(p_file, db)
+                    hashes.append(run_hash)
             else:
                 print("Too lazy to code in co-op runs")
 
         except Exception as e:
             print("Couldn't parse file: {} -> {}".format(r_f, e))
+        
 
 # Pretty much everything was figured out by Grimy and/or AlexisYJ. Anything that looks complicated was them. Probably the simple stuff too :)
 def main():
@@ -344,13 +474,14 @@ def main():
 
     # Get hashes for runs from the db
     run_hashes = get_run_hashes(db)
+    tags = get_tags(db)
 
     # Setup the replay folder/files 
     replay_folder = setup_replay_folder(replay_folder, config)
     replay_files = get_files(replay_folder)
 
     # Parse the replay files
-    parse_files(replay_folder, replay_files)
+    parse_files(replay_folder, replay_files, run_hashes, tags, db)
 
     # Save any new runs to the db
 
