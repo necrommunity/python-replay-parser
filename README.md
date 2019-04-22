@@ -10,15 +10,15 @@ Copy the `config_template.ini` as `config.ini`. Update any of the defaults if yo
 For ease of viewing, created a new line for each "\n" present in the replay data. Example is a run that ended in 1-3 on Bard
 ```
 94 <- Replay version
--7 <- Mode type
-1 <- Not sure 
+-7 <- Mode type (referenced as "t_replay->startingLevel" in code)
+1 <- Starting zone
 0 <- Starting gold
 0 <- Has broadsword
 57219 <- Run time in milliseconds
 3 <- Total songs played
 v Start of first floor information
 1492725043 <- First floor seed
-1 <- Not sure
+1 <- Number of players
 480 <- Camera width in pixels assumedly
 270 <- Camera height in pixels assumedly
 47 <- Keys pressed
