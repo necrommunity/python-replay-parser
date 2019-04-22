@@ -22,7 +22,7 @@ Each row represents a single replay file
 > file: text
 > > The file name of the replay
 
-> hash: int
+> f_hash: int
 > > A unique hash based off of folder, file and character of the run
 
 > run_date: int
