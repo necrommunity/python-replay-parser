@@ -1,14 +1,15 @@
 #!py -3
-import sys
+import math
 import os
 import sqlite3
+import sys
 from configparser import ConfigParser
-
 from tkinter import filedialog
+
 from dateutil import parser
-import math
 
 CONFIG = "config.ini"
+
 
 class ParsedReplay:
     def __init__(self):
@@ -17,6 +18,7 @@ class ParsedReplay:
         self.amplified_full = True
         self.folder = ""
         self.file = ""
+        self.f_hash = 0
         self.run_date = ""
         self.run_type = 0
         self.f_run_type = ""
@@ -28,88 +30,80 @@ class ParsedReplay:
         self.f_end_zone = ""
         self.run_time = 0
         self.f_run_time = ""
+        self.key_presses = 0
         self.win = False
         self.bugged = False
         self.bugged_reason = ""
 
     def __str__(self):
-        return("Date: {}, Seed: {}, Char: {}, Type: {}, EndZone: {}, RunTime: {}".format(
-            self.run_date, 
-            self.seed, 
-            self.f_char, 
-            self.f_run_type, 
+        return("Date: {}, Seed: {}, Char: {}, Type: {}, EndZone: {}, RunTime: {}, KeyPresses: {}".format(
+            self.run_date,
+            self.seed,
+            self.f_char,
+            self.f_run_type,
             self.f_end_zone,
-            self.f_run_time
-            ))
-   
+            self.f_run_time,
+            self.key_presses
+        ))
+
 
 def setup_database(db):
     try:
         conn = sqlite3.connect(db)
-        
+
         bugged = """
             CREATE TABLE IF NOT EXISTS bugged (
+            id            INTEGER PRIMARY KEY ASC ON CONFLICT ABORT AUTOINCREMENT NOT NULL ON CONFLICT ABORT UNIQUE ON CONFLICT ABORT,
             run_id        INTEGER REFERENCES run (run_id),
             bugged_reason TEXT,
-            bugged_data   TEXT,
-            PRIMARY KEY (
-                run_id,
-                bugged_reason
-            )
-            ON CONFLICT ABORT
+            bugged_data   TEXT
         );
         """
 
         run = """
             CREATE TABLE IF NOT EXISTS run (
-            run_id        INTEGER,
-            file          TEXT,
-            version       INTEGER,
-            run_date      INTEGER,
-            type          TEXT,
-            time          INT,
-            fromated_time TEXT,
-            seed          INT,
-            players       INT,
-            char1         TEXT,
-            char2         TEXT,
-            songs         INT,
-            end_zone      TEXT,
-            finished      INTEGER,
-            killed_by     TEXT,
-            score         INTEGER,
-            imported_date INTEGER,
-            PRIMARY KEY (
-                run_id
-            )
-            ON CONFLICT ABORT
+            id             INTEGER  PRIMARY KEY ASC ON CONFLICT ABORT AUTOINCREMENT NOT NULL ON CONFLICT ABORT UNIQUE ON CONFLICT ABORT,
+            version        INTEGER,
+            amplified      INTEGER,
+            amplified_full INTEGER,
+            folder         TEXT,
+            file           TEXT,
+            hash           INTEGER,
+            run_date       INTEGER,
+            f_run_date     INTEGER
+            run_type       INTEGER,
+            f_run_type     TEXT,
+            time           INTEGER,
+            f_time         TEXT,
+            seed           INTEGER,
+            songs          INTEGER,
+            end_zone       TEXT,
+            run_time       INTEGER,
+            f_run_time     TEXT,
+            players        INTEGER,
+            char1          INTEGER,
+            win            INTEGER,
+            killed_by      INTEGER,
+            f_killed_by    TEXT,
+            key_presses    INTEGER,
+            score          INTEGER,
+            imported_date  INTEGER
         );
         """
 
-
         run_tag = """
             CREATE TABLE IF NOT EXISTS run_tag (
+            id     INTEGER PRIMARY KEY ASC ON CONFLICT ABORT AUTOINCREMENT NOT NULL ON CONFLICT ABORT UNIQUE ON CONFLICT ABORT,
             run_id INTEGER REFERENCES run (run_id),
-            tag_id INTEGER REFERENCES tag (tag_id),
-            PRIMARY KEY (
-                run_id,
-                tag_id
-            )
-            ON CONFLICT ABORT
+            tag_id INTEGER REFERENCES tag (tag_id)
         );
-
-
         """
 
         tag = """
             CREATE TABLE IF NOT EXISTS tag (
-            tag_id INTEGER,
+            id      INTEGER PRIMARY KEY ASC ON CONFLICT ABORT AUTOINCREMENT NOT NULL ON CONFLICT ABORT UNIQUE ON CONFLICT ABORT,
             name   TEXT,
-            color  TEXT,
-            PRIMARY KEY (
-                tag_id
-            )
-            ON CONFLICT ABORT
+            color  TEXT
         );
         """
         c = conn.cursor()
@@ -127,6 +121,7 @@ def setup_database(db):
     except Exception as e:
         print("Error: {}".format(e))
 
+
 def setup_replay_folder(r_folder, config):
     if not os.path.exists(r_folder):
         try:
@@ -141,6 +136,7 @@ def setup_replay_folder(r_folder, config):
     else:
         return r_folder
 
+
 def get_files(replays):
     try:
         files = os.listdir(replays)
@@ -148,15 +144,16 @@ def get_files(replays):
     except Exception as e:
         print("Could not get replay files: {}".format(e))
 
+
 def get_char_name(c):
     switcher = {
         0: "Cadence",
         1: "Melody",
         2: "Aria",
-        3: "Dorian", # Dad
-        4: "Eli", # Best
-        5: "Monk", # Bad
-        6: "Dove", 
+        3: "Dorian",  # Dad
+        4: "Eli",  # Best
+        5: "Monk",  # Bad
+        6: "Dove",
         7: "Coda",
         8: "Bolt",
         9: "Bard",
@@ -166,6 +163,7 @@ def get_char_name(c):
         13: "Tempo"
     }
     return switcher.get(c, "Unknown")
+
 
 def get_type_name(t):
     t = int(t)
@@ -194,8 +192,9 @@ def get_type_name(t):
         -63: "Seeded Randomizer",
         -64: "Seeded Mystery"
     }
-    
+
     return switcher.get(t, "Unknown")
+
 
 def get_end_zone(songs, char, t, replay):
     if not replay.amplified_full:
@@ -211,31 +210,35 @@ def get_end_zone(songs, char, t, replay):
             zone = (zones + 1) - zone
         if zone > zones:
             if zone > zones + 1 or floor > 2:
-                replay.bugged, replay.bugged_reason = True, "Number of songs is bugged: {}".format(songs)
+                replay.bugged, replay.bugged_reason = True, "Number of songs is bugged: {}".format(
+                    songs)
             zone = zones
             floor = 5
-        elif zone < 1: # Aria
-            replay.bugged, replay.bugged_reason = True, "Number of songs is bugged: {}".format(songs)
+        elif zone < 1:  # Aria
+            replay.bugged, replay.bugged_reason = True, "Number of songs is bugged: {}".format(
+                songs)
             zone = 1
             floor = 4
         replay.end_zone = {'zone': zone, 'floor': floor}
         replay.f_end_zone = "{}-{}".format(zone, floor)
-    elif char in [6]: # Dove
-        zone = t if t < zones + 1 and t > 0 else math.floor(((songs - 1)/3) + 1)
+    elif char in [6]:  # Dove
+        zone = t if t < zones + \
+            1 and t > 0 else math.floor(((songs - 1)/3) + 1)
         floor = ((songs - 1) % 3) + 1
         replay.end_zone = {'zone': zone, 'floor': floor}
         replay.f_end_zone = "{}-{}".format(zone, floor)
-    
+
     return(replay)
 
+
 def get_time_from_replay(ms_time):
-    
+
     if ms_time < 0:
         return "00:00:00.000"
-    millis = int(((ms_time/1000)%1)*100)
-    seconds = math.floor((ms_time/1000)%60)
-    minutes = math.floor((ms_time/(1000*60))%60)
-    hours = math.floor((ms_time/(1000*60*60))%24)
+    millis = int(((ms_time/1000) % 1)*100)
+    seconds = math.floor((ms_time/1000) % 60)
+    minutes = math.floor((ms_time/(1000*60)) % 60)
+    hours = math.floor((ms_time/(1000*60*60)) % 24)
     time_to_return = ""
     time_to_return += '{:>02}:'.format(str(hours)) if hours > 0 else "00:"
     time_to_return += '{:>02}:'.format(str(minutes)) if minutes > 0 else "00:"
@@ -244,8 +247,16 @@ def get_time_from_replay(ms_time):
 
     return time_to_return
 
+def get_key_presses(songs, data, replay):
+    if songs < 0:
+        return 0
+    keys = 0
+    for i in range(0, songs):
+        keys += int(data[(i+1)*11])
+    return keys
+       
 def calculate_seed(zone_1_seed, amplified):
-    #seed.add(0x40005e47).times(0xd6ee52a).mod(0x7fffffff).mod(0x713cee3f);
+    # seed.add(0x40005e47).times(0xd6ee52a).mod(0x7fffffff).mod(0x713cee3f);
     add1 = int("0x40005e47", 16)
     mult1 = int("0xd6ee52a", 16)
     mod1 = int("0x7fffffff", 16)
@@ -258,8 +269,9 @@ def calculate_seed(zone_1_seed, amplified):
         seed = zone_1_seed % mod2
         #print("Seed: {}".format(seed))
         return seed
-    else: 
+    else:
         print("Not calculating this seed: {}".format(zone_1_seed))
+
 
 def parse_files(r_folder, r_files):
     for r_f in r_files:
@@ -273,21 +285,24 @@ def parse_files(r_folder, r_files):
             version = int(split_name[0])
             amp = True if version > 75 else False
             amp_full = True if version > 84 else False
-            dt = "{} {}".format("/".join(split_name[3:6:]), ":".join(split_name[6:9]))
+            dt = "{} {}".format(
+                "/".join(split_name[3:6:]), ":".join(split_name[6:9]))
             t = int(split_name[9])
             coop = True if int(split_data[8]) > 1 else False
             char = int(split_data[12].split("|")[0])
             seed = int(split_data[7])
             songs = int(int(split_data[6]))
             run_time = int(split_data[5])
+            
             if not coop:
                 p_file.version = version
                 p_file.amplified = amp
-                p_file.amplified_full = amp_full 
+                p_file.amplified_full = amp_full
                 p_file.folder = r_folder
                 p_file.file = r_f
+                p_file.f_hash = hash("{}/{}".format(r_folder, r_f))
                 p_file.run_date = parser.parse(dt)
-                p_file.run_type = t 
+                p_file.run_type = t
                 p_file.f_run_type = get_type_name(t)
                 p_file.char = char
                 p_file.f_char = get_char_name(char)
@@ -295,7 +310,9 @@ def parse_files(r_folder, r_files):
                 p_file.songs = songs
                 p_file.run_time = run_time
                 p_file.f_run_time = get_time_from_replay(run_time)
-                p_file = get_end_zone(songs, char, t, p_file)                        
+                p_file = get_end_zone(songs, char, t, p_file)
+                p_file.key_presses = get_key_presses(songs, split_data, p_file)
+                #print(p_file.__dict__)
                 print(p_file)
             else:
                 print("Too lazy to code in co-op runs")
@@ -303,20 +320,20 @@ def parse_files(r_folder, r_files):
         except Exception as e:
             print("Couldn't parse file: {} -> {}".format(r_f, e))
 
-        
-
+# Pretty much everything was figured out by Grimy and/or AlexisYJ. Anything that looks complicated was them. Probably the simple stuff too
 def main():
     config = ConfigParser()
     config.read(CONFIG)
     dbfile = config.get('DEFAULT', 'DATABASE_FILE')
     replay_folder = config.get('DEFAULT', 'REPLAY_FOLDER')
-    
+
     db = setup_database(dbfile)
 
     replay_folder = setup_replay_folder(replay_folder, config)
     replay_files = get_files(replay_folder)
 
     parse_files(replay_folder, replay_files)
+
 
 if __name__ == "__main__":
     sys.exit(main())
