@@ -235,12 +235,12 @@ def get_time_from_replay(ms_time):
     millis = int(((ms_time/1000)%1)*100)
     seconds = math.floor((ms_time/1000)%60)
     minutes = math.floor((ms_time/(1000*60))%60)
-    hours = math.floor((ms_time/(1000*60*60))%24
+    hours = math.floor((ms_time/(1000*60*60))%24)
     time_to_return = ""
     time_to_return += '{:>02}:'.format(str(hours)) if hours > 0 else "00:"
     time_to_return += '{:>02}:'.format(str(minutes)) if minutes > 0 else "00:"
     time_to_return += '{:>02}.'.format(str(seconds)) if seconds > 0 else "00."
-    time_to_return += '{:>03}'.format(str(millis)) if millis > 0 else "000"
+    time_to_return += '{:>02}'.format(str(millis)) if millis > 0 else "00"
 
     return time_to_return
 
