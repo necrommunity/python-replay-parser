@@ -1,6 +1,9 @@
 # Database Schema 
 
-## **run** -- each row represents a single replay file
+## **run** 
+
+Each row represents a single replay file
+
 > id: int, primary key, autoincrements
 > > The unique ID for each run in the database
 
@@ -79,7 +82,8 @@
 > imported_date: int
 > > The date the run was imported
 
-## **bugged** -- each row represents data for a bugged run
+## **bugged** 
+Each row represents data for a bugged run
 
 > id: int, primary key, autoincremented
 > > The unique ID of each bugged run
@@ -93,7 +97,8 @@
 > bugged_data: text
 > > The raw data behind the bugged run
 
-## **tag** -- each row represents a specific tag -- not currently implemented
+## **tag** 
+Each row represents a specific tag -- not currently implemented
 
 > id: int, primary key, autoincremented
 > > The unique ID of each tag
@@ -104,7 +109,8 @@
 > color: text
 > > The color of each tag
 
-## **run_tag** -- each row represents the tag of the a run in the run table -- not currently implemented
+## **run_tag** 
+Each row represents the tag of the a run in the run table -- not currently implemented
 
 > id: int, primary key, autoincremented
 > > The unique ID of each run's tag
