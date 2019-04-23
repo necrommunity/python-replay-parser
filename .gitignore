@@ -123,5 +123,6 @@ dmypy.json
 .pyre/
 
 # Project created files
-*.sqlite
 config.ini
+*.sqlite
+*.json
