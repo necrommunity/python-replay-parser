@@ -1,3 +1,5 @@
+[![996.icu](https://img.shields.io/badge/link-996.icu-red.svg)](https://996.icu)
+
 # Replay Parser
 
 A replay parser for Crypt of the Necrodancer: AMPLIFIED, which will store all replays into a database for viewing later.
