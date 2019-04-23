@@ -660,6 +660,7 @@ def main():
     replay_folder = setup_replay_folder(replay_folder, config)
 
     # Loop this forever
+    counter = 0
     while True:
         replay_files = get_files(replay_folder)
 
@@ -667,6 +668,8 @@ def main():
         replays = parse_files(replay_folder, replay_files,
                               replays, run_hashes, tags, db)
         save_to_json(replays, json_file)
+        counter += 1
+        print("Looped {} time{}".format(counter, "s" if counter != 1 else ""))
         time.sleep(30)
         
 
