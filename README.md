@@ -1,6 +1,6 @@
 # Replay Parser
 
-A replay parser for Necrodancer: AMPLIFIED, which will store all replays into a database for viewing later.
+A replay parser for Crypt of the Necrodancer: AMPLIFIED, which will store all replays into a database for viewing later.
 
 ## Building Config File
 
@@ -9,7 +9,9 @@ Copy the `config_template.ini` as `config.ini`. Update any of the defaults if yo
 ## TODO
 
 1. Make script loop indefinitely to continue to pull in new replay files
-2. Probably a ton of cleanup at some point
+2. Add older replay parsing, since it only parses the Amplified full release correctly
+3. Add in co-op replays, but probably not.
+4. Probably a ton of cleanup at some point
 
 ## Replay File Information
 For ease of viewing, created a new line for each "\n" present in the replay data. Example is a run that ended in 1-3 on Bard
