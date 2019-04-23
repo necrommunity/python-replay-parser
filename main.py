@@ -555,6 +555,12 @@ def parse_files(r_folder, r_files, all_replays, hashes, tags, db):
             songs = int(int(split_data[6]))
             run_time = int(split_data[5])
             run_hash = hashlib.md5("{}/{} {}".format(r_folder, r_f, char1).encode()).hexdigest()
+            if char1 in [0, 10]:
+                win = True if songs == 22 and len(split_data[248]) > 0 else False
+            elif char1 not in [0, 6, 10]:
+                 win = True if songs == 20 and len(split_data[226]) > 0 else False
+            elif char1 == 6:
+                win = True if songs == 15 and len(split_data[171]) > 0 else False
             if not coop:
                 p_file.version = version
                 p_file.amplified = amp
@@ -562,7 +568,7 @@ def parse_files(r_folder, r_files, all_replays, hashes, tags, db):
                 p_file.folder = r_folder
                 p_file.file = r_f
                 p_file.f_hash = run_hash
-                p_file.run_date = int(dt.timestamp()) * 1000
+                p_file.run_date = int(dt.timestamp())
                 p_file.f_run_date = f_dt
                 p_file.run_type = t
                 p_file.f_run_type = get_type_name(t)
@@ -573,9 +579,10 @@ def parse_files(r_folder, r_files, all_replays, hashes, tags, db):
                 p_file.songs = songs
                 p_file.run_time = run_time
                 p_file.f_run_time = get_time_from_replay(run_time)
+                p_file.win = win
                 p_file = get_end_zone(songs, char1, t, p_file)
                 p_file.key_presses = get_key_presses(songs, split_data, p_file)
-                p_file.imported_date = int(datetime.now().timestamp()) * 1000
+                p_file.imported_date = int(datetime.now().timestamp())
                 #print(p_file.__dict__)
                 print(p_file)
                 if run_hash not in hashes:
