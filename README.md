@@ -6,6 +6,11 @@ A replay parser for Necrodancer: AMPLIFIED, which will store all replays into a 
 
 Copy the `config_template.ini` as `config.ini`. Update any of the defaults if your replay folder doesn't exist there. If you aren't sure, remove the `REPLAY_FOLDER` value, so it reads as `REPLAY_FOLDER=`. The script will ask you to find the folder and then save it to the config file.
 
+## TODO
+
+1. Make script loop indefinitely to continue to pull in new replay files
+2. Probably a ton of cleanup at some point
+
 ## Replay File Information
 For ease of viewing, created a new line for each "\n" present in the replay data. Example is a run that ended in 1-3 on Bard
 ```
