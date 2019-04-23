@@ -9,9 +9,12 @@ import hashlib
 from dateutil import parser
 from datetime import datetime
 import json
+
 CONFIG = "config.ini"
 
 # ParsedReplay holds all needed information about each run that has been parsed
+
+
 class ParsedReplay:
     def __init__(self):
         self.version = 0
@@ -55,9 +58,9 @@ class ParsedReplay:
             self.f_run_time,
             self.key_presses
         ))
-    
+
     def to_json(self):
-        j = { 
+        j = {
             'version': self.version,
             'amplified': self.amplified,
             'amplifiedFull': self.amplified_full,
@@ -85,6 +88,8 @@ class ParsedReplay:
         return j
 
 # This function setups up the database if it doesn't exist
+
+
 def setup_database(db):
     try:
         conn = sqlite3.connect(db)
@@ -164,9 +169,10 @@ def setup_database(db):
             c.execute(tag)
             c.execute(bugged)
             c.execute(run_tag)
-            c.executemany('INSERT INTO tag (name, color, color_hex) values (?, ?, ?)', tag_data)
+            c.executemany(
+                'INSERT INTO tag (name, color, color_hex) values (?, ?, ?)', tag_data)
             conn.commit()
-            
+
         return conn
 
     except Exception as e:
@@ -174,6 +180,8 @@ def setup_database(db):
         sys.exit()
 
 # This function configures where the replays are located if not default and writes it to the config file
+
+
 def setup_replay_folder(r_folder, config):
     if not os.path.exists(r_folder):
         try:
@@ -189,6 +197,8 @@ def setup_replay_folder(r_folder, config):
         return r_folder
 
 # This function gets the hashes from the database so we don't write old replays to the db
+
+
 def get_run_hashes(db):
     hashes = []
     c = db.cursor()
@@ -198,6 +208,8 @@ def get_run_hashes(db):
     return hashes
 
 # This function gets all the current tags from the database
+
+
 def get_tags(db):
     tags = {}
     c = db.cursor()
@@ -207,6 +219,8 @@ def get_tags(db):
     return tags
 
 # This function gets the replay data from the database
+
+
 def get_replays(db):
     replays = {}
     c = db.cursor()
@@ -276,13 +290,15 @@ def get_replays(db):
             p_replay.bugged = bool(run[23])
             p_replay.bugged_reason = run[24]
             p_replay.imported_date = run[25]
-            
+
             replays[p_replay.f_hash] = p_replay
     except Exception as e:
         print("Couldn't populate replay from db \'{}\': {}".format(run[5], e))
     return replays
 
 # This function gets the listing of files needed to be parsed
+
+
 def get_files(replays):
     try:
         files = os.listdir(replays)
@@ -291,6 +307,8 @@ def get_files(replays):
         print("Could not get replay files: {}".format(e))
 
 # This function acts as a case statement for character's formatted name because Python :)
+
+
 def get_char_name(c):
     switcher = {
         0: "Cadence",
@@ -311,6 +329,8 @@ def get_char_name(c):
     return switcher.get(c, "Unknown")
 
 # This function acts as a case statement for the formatted run type because Python :)
+
+
 def get_type_name(t):
     t = int(t)
     switcher = {
@@ -342,6 +362,8 @@ def get_type_name(t):
     return switcher.get(t, "Unknown")
 
 # This function returns the zone that the replay ended on
+
+
 def get_end_zone(songs, char, t, replay):
     if not replay.amplified_full:
         print("Too lazy to code non-amplified full release")
@@ -377,6 +399,8 @@ def get_end_zone(songs, char, t, replay):
     return(replay)
 
 # This function returns the formatted run time as seen as the end screen in game
+
+
 def get_time_from_replay(ms_time):
 
     if ms_time < 0:
@@ -394,6 +418,8 @@ def get_time_from_replay(ms_time):
     return time_to_return
 
 # This function returns the number of keys pressed during a run, because why not
+
+
 def get_key_presses(songs, data, replay):
     if songs < 0:
         return 0
@@ -403,13 +429,15 @@ def get_key_presses(songs, data, replay):
     return keys
 
 # This function saves a replay to the database
+
+
 def save_run(run, db):
-    
+
     try:
-        # run_id = -1 
+        # run_id = -1
         # bugged_id = -1
         # tag_id = -1
-        # runtag_id = -1 
+        # runtag_id = -1
 
         c = db.cursor()
         run_sql = """
@@ -473,30 +501,31 @@ def save_run(run, db):
             )
         ]
         c.executemany(run_sql, run_data)
-        
+
         # Save the id of the last inserted row as the run_id
         # run_id = c.lastrowid
 
-        
-        
         # If the run was bugged, make a note of it
         # if run.bugged:
         #     c.execute("hehe insert bugged stuff")
         #     bugged_id = c.lastrowid
-        
+
         # Insert the tag information
         # c.execute("hehe do the tag stuff")
         # tag_id = c.lastrowid
 
-        #if run_id > 0 and tag_id > 0:
+        # if run_id > 0 and tag_id > 0:
         #     c.execute("hehe add the runtag stuffs")
         #     runtag_id = c.lastrowid
 
         db.commit()
     except Exception as e:
-        print("Couldn't insert run: {}, {}/{}\n{}".format(run.f_hash, run.folder, run.file, e))
+        print("Couldn't insert run: {}, {}/{}\n{}".format(run.f_hash,
+                                                          run.folder, run.file, e))
 
 # This function outputs the replay data to a json file
+
+
 def save_to_json(replays, json_file):
     try:
         if os.path.exists(json_file):
@@ -507,13 +536,16 @@ def save_to_json(replays, json_file):
             f.write("\"data\": [")
             c_len = 0
             for replay in replays:
-                f.write("{}{}\n".format(json.dumps(replays[replay].to_json()), "," if c_len+1 < len(replays) else ""))
+                f.write("{}{}\n".format(json.dumps(
+                    replays[replay].to_json()), "," if c_len+1 < len(replays) else ""))
                 c_len += 1
             f.write("]}]")
     except Exception as e:
         print("Couldn't save to json: {}".format(e))
 
-# This function calculates the seed based off the first floor seed       
+# This function calculates the seed based off the first floor seed
+
+
 def calculate_seed(zone_1_seed, amplified):
     # seed.add(0x40005e47).times(0xd6ee52a).mod(0x7fffffff).mod(0x713cee3f);
     add1 = int("0x40005e47", 16)
@@ -532,6 +564,8 @@ def calculate_seed(zone_1_seed, amplified):
         print("Not calculating this seed: {}".format(zone_1_seed))
 
 # This function does all the heavy lifting and is where all replay parsing happens
+
+
 def parse_files(r_folder, r_files, all_replays, hashes, tags, db):
     for r_f in r_files:
         try:
@@ -546,7 +580,8 @@ def parse_files(r_folder, r_files, all_replays, hashes, tags, db):
             amp_full = True if version > 84 else False
             dt = parser.parse("{} {}".format(
                 "/".join(split_name[3:6:]), ":".join(split_name[6:9])))
-            f_dt = "{}/{}/{} {}:{}".format(dt.year, dt.month, dt.day, dt.hour, dt.minute)
+            f_dt = "{}/{}/{} {}:{}".format(dt.year,
+                                           dt.month, dt.day, dt.hour, dt.minute)
             t = int(split_name[9])
             coop = True if int(split_data[8]) > 1 else False
             char1 = int(split_data[12].split("|")[0])
@@ -554,13 +589,17 @@ def parse_files(r_folder, r_files, all_replays, hashes, tags, db):
             seed = int(split_data[7])
             songs = int(int(split_data[6]))
             run_time = int(split_data[5])
-            run_hash = hashlib.md5("{}/{} {}".format(r_folder, r_f, char1).encode()).hexdigest()
+            run_hash = hashlib.md5(
+                "{}/{} {}".format(r_folder, r_f, char1).encode()).hexdigest()
             if char1 in [0, 10]:
-                win = True if songs == 22 and len(split_data[248]) > 0 else False
+                win = True if songs == 22 and len(
+                    split_data[248]) > 0 else False
             elif char1 not in [0, 6, 10]:
-                 win = True if songs == 20 and len(split_data[226]) > 0 else False
+                win = True if songs == 20 and len(
+                    split_data[226]) > 0 else False
             elif char1 == 6:
-                win = True if songs == 15 and len(split_data[171]) > 0 else False
+                win = True if songs == 15 and len(
+                    split_data[171]) > 0 else False
             if not coop:
                 p_file.version = version
                 p_file.amplified = amp
@@ -583,10 +622,10 @@ def parse_files(r_folder, r_files, all_replays, hashes, tags, db):
                 p_file = get_end_zone(songs, char1, t, p_file)
                 p_file.key_presses = get_key_presses(songs, split_data, p_file)
                 p_file.imported_date = int(datetime.now().timestamp())
-                #print(p_file.__dict__)
+                # print(p_file.__dict__)
                 print(p_file)
                 if run_hash not in hashes:
-                    
+
                     save_run(p_file, db)
                     all_replays[p_file.f_hash] = p_file
                     hashes.append(run_hash)
@@ -597,7 +636,7 @@ def parse_files(r_folder, r_files, all_replays, hashes, tags, db):
             print("Couldn't parse file: {} -> {}".format(r_f, e))
 
     return all_replays
-        
+
 
 # Pretty much everything was figured out by Grimy and/or AlexisYJ. Anything that looks complicated was them. Probably the simple stuff too :)
 def main():
@@ -616,14 +655,15 @@ def main():
     tags = get_tags(db)
     replays = get_replays(db)
 
-    # Setup the replay folder/files 
+    # Setup the replay folder/files
     replay_folder = setup_replay_folder(replay_folder, config)
     replay_files = get_files(replay_folder)
 
     # Parse the replay files
-    replays = parse_files(replay_folder, replay_files, replays, run_hashes, tags, db)
+    replays = parse_files(replay_folder, replay_files,
+                          replays, run_hashes, tags, db)
     save_to_json(replays, json_file)
-    
+
 
 if __name__ == "__main__":
     sys.exit(main())
