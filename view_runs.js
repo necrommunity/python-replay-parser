@@ -15,6 +15,7 @@ $(function(){
                 "Run Time",
                 "Win",
                 "Key Presses",
+                "Songs", 
                 "File"
             ];
 
@@ -34,25 +35,32 @@ $(function(){
             output = output + "</tr>";
 
             output = output + "</thead>";
-            output = output + "<tfooter>";
-            output = output + "</tfooter>";
             output = output + "<tbody>";
             $.each(data["data"], function(i, item){
+                
                 output = output + "<tr class=\"\">";
                 output = output + "<td scope=\"row\" class=\"td\">" + moment(item.runDate*1000).format("YYYY/MM/DD h:mm:ss") + "</td>";
                 output = output + "<td class=\"td\">" + item.fChar1 + "</td>";
                 output = output + "<td class=\"td\">" + item.seed + "</td>";
                 output = output + "<td class=\"td\">" + item.endZone + "</td>";
                 output = output + "<td class=\"td\">" + item.fRunTime+ "</td>";
-                output = output + "<td class=\"td\">" + item.win + "</td>";
+                if (item.win == true) {
+                    output = output + "<td class=\"td bg-success\"> Yes </td>";
+                } else {
+                    output = output + "<td class=\"td bg-danger\"> No </td>";
+                }
                 output = output + "<td class=\"td\">" + item.keyPresses + "</td>";
+                output = output + "<td class=\"td\">" + item.songs + "</td>";
                 output = output + "<td class=\"td\">" + item.file + "</td>";
                 output = output + "</tr>";
                 totalRuns += 1;
-                if (item.win === 'true') totalWins += 1;
+                if (item.win === true) totalWins += 1;
             });
             output = output + "</tbody>";
+            output = output + "<tfoot>";
+            output = output + "</tfoot>";
             output = output + "</table>";
+
 
             $('#table').html(output);
             $('#output_table').DataTable({
