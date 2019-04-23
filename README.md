@@ -8,7 +8,7 @@ Copy the `config_template.ini` as `config.ini`. Update any of the defaults if yo
 
 ## TODO
 
-1. Make script loop indefinitely to continue to pull in new replay files
+1. ~~Make script loop indefinitely to continue to pull in new replay files~~
 2. Add older replay parsing, since it only parses the Amplified full release correctly
 3. Add in co-op replays, but probably not.
 4. Probably a ton of cleanup at some point

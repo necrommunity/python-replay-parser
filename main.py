@@ -3,6 +3,7 @@ import math
 import os
 import sqlite3
 import sys
+import time
 from configparser import ConfigParser
 from tkinter import filedialog
 import hashlib
@@ -657,13 +658,17 @@ def main():
 
     # Setup the replay folder/files
     replay_folder = setup_replay_folder(replay_folder, config)
-    replay_files = get_files(replay_folder)
 
-    # Parse the replay files
-    replays = parse_files(replay_folder, replay_files,
-                          replays, run_hashes, tags, db)
-    save_to_json(replays, json_file)
+    # Loop this forever
+    while True:
+        replay_files = get_files(replay_folder)
 
+        # Parse the replay files
+        replays = parse_files(replay_folder, replay_files,
+                              replays, run_hashes, tags, db)
+        save_to_json(replays, json_file)
+        time.sleep(30)
+        
 
 if __name__ == "__main__":
     sys.exit(main())

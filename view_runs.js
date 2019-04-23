@@ -39,7 +39,7 @@ $(function(){
             $.each(data["data"], function(i, item){
                 
                 output = output + "<tr class=\"\">";
-                output = output + "<td scope=\"row\" class=\"td\">" + moment(item.runDate*1000).format("YYYY/MM/DD h:mm:ss") + "</td>";
+                output = output + "<td scope=\"row\" class=\"td\">" + moment(item.runDate*1000).format("YYYY/MM/DD HH:mm:ss") + "</td>";
                 output = output + "<td class=\"td\">" + item.fChar1 + "</td>";
                 output = output + "<td class=\"td\">" + item.seed + "</td>";
                 output = output + "<td class=\"td\">" + item.endZone + "</td>";
