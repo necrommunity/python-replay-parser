@@ -571,7 +571,7 @@ def parse_files(r_folder, r_files, all_replays, hashes, tags, db):
     for r_f in r_files:
         try:
             p_file = ParsedReplay()
-            print("Parsing: \"{}/{}\"".format(r_folder, r_f))
+            # print("Parsing: \"{}/{}\"".format(r_folder, r_f))
             split_name = r_f.split(".")[0].split("_")
             with open("{}/{}".format(r_folder, r_f)) as r:
                 data = r.read()
@@ -624,7 +624,7 @@ def parse_files(r_folder, r_files, all_replays, hashes, tags, db):
                 p_file.key_presses = get_key_presses(songs, split_data, p_file)
                 p_file.imported_date = int(datetime.now().timestamp())
                 # print(p_file.__dict__)
-                print(p_file)
+                # print(p_file)
                 if run_hash not in hashes:
 
                     save_run(p_file, db)
@@ -669,7 +669,7 @@ def main():
                               replays, run_hashes, tags, db)
         save_to_json(replays, json_file)
         counter += 1
-        print("Looped {} time{}".format(counter, "s" if counter != 1 else ""))
+        print("Looking for new replays: {}".format(counter))
         time.sleep(30)
         
 

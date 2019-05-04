@@ -8,6 +8,8 @@ A replay parser for Crypt of the Necrodancer: AMPLIFIED, which will store all re
 
 Copy the `config_template.ini` as `config.ini`. Update any of the defaults if your replay folder doesn't exist there. If you aren't sure, remove the `REPLAY_FOLDER` value, so it reads as `REPLAY_FOLDER=`. The script will ask you to find the folder and then save it to the config file.
 
+> This will not run if it doesn't find `config.ini` and I am too lazy to make a default :)
+
 ## TODO
 
 1. ~~Make script loop indefinitely to continue to pull in new replay files~~
