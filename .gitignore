@@ -125,4 +125,5 @@ dmypy.json
 # Project created files
 config.ini
 *.sqlite
-*.json
+.vscode/settings.json
+data.json
