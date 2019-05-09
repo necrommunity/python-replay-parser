@@ -1,0 +1,14 @@
+{
+    "recommendations": [
+        "ms-python.python",
+        "tht13.python",
+        "alexcvzz.vscode-sqlite",
+        "coenraads.bracket-pair-colorizer-2",
+        "formulahendry.auto-close-tag",
+        "aaron-bond.better-comments",
+        "mikestead.dotenv",
+        "humao.rest-client",
+        "mitchdenny.ecdc",
+        "mechatroner.rainbow-csv"
+    ]
+}
