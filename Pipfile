@@ -9,8 +9,10 @@ autopep8 = "*"
 
 [packages]
 python-dateutil = "==2.8.0"
-python_version = "==3.7.3"
+python_version = ">'3.7.3"
 pylint = "==2.3.1"
+tkinter = "*"
+tk = "*"
 
 [requires]
 python_version = "3.7.3"
