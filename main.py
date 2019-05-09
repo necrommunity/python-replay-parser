@@ -5,7 +5,10 @@ import sqlite3
 import sys
 import time
 from configparser import ConfigParser
-from tkinter import filedialog
+try:
+    from tk import filedialog
+except:
+    from tkinter import filedialog
 import hashlib
 from dateutil import parser
 from datetime import datetime
