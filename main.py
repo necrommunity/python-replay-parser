@@ -13,10 +13,10 @@ import json
 
 CONFIG = "config.ini"
 
-# ParsedReplay holds all needed information about each run that has been parsed
-
 
 class ParsedReplay:
+    """ParsedReplay holds all needed information about each run that has been parsed"""
+
     def __init__(self):
         self.version = 0
         self.amplified = True
@@ -48,8 +48,8 @@ class ParsedReplay:
         self.bugged_reason = ""
         self.imported_date = ""
 
-    # A simple way to output useful data when debugging :)
     def __str__(self):
+        """A simple way to output useful data when debugging :)"""
         return("Date: {}, Seed: {}, Char: {}, Type: {}, EndZone: {}, RunTime: {}, KeyPresses: {}".format(
             self.f_run_date,
             self.seed,
@@ -61,6 +61,7 @@ class ParsedReplay:
         ))
 
     def to_json(self):
+        """A simple way to output the json needed for each replay :)"""
         j = {
             'version': self.version,
             'amplified': self.amplified,
@@ -88,10 +89,9 @@ class ParsedReplay:
         }
         return j
 
-# This function setups up the database if it doesn't exist
-
 
 def setup_database(db):
+    """This function setups up the database if it doesn't exist"""
     try:
         conn = sqlite3.connect(db)
 
@@ -180,10 +180,9 @@ def setup_database(db):
         print("Error: {}".format(e))
         sys.exit()
 
-# This function configures where the replays are located if not default and writes it to the config file
-
 
 def setup_replay_folder(r_folder, config):
+    """This function configures where the replays are located if not default and writes it to the config file"""
     if not os.path.exists(r_folder):
         try:
             print("Getting replay folder")
@@ -197,10 +196,9 @@ def setup_replay_folder(r_folder, config):
     else:
         return r_folder
 
-# This function gets the hashes from the database so we don't write old replays to the db
-
 
 def get_run_hashes(db):
+    """This function gets the hashes from the database so we don't write old replays to the db"""
     hashes = []
     c = db.cursor()
     c.execute("SELECT r.f_hash FROM run r")
@@ -208,10 +206,9 @@ def get_run_hashes(db):
         hashes.append(run_hash[0])
     return hashes
 
-# This function gets all the current tags from the database
-
 
 def get_tags(db):
+    """This function gets all the current tags from the database"""
     tags = {}
     c = db.cursor()
     c.execute("SELECT t.id, t.name, t.color, t.color_hex FROM tag t")
@@ -219,10 +216,9 @@ def get_tags(db):
         tags[tag[0]] = tag
     return tags
 
-# This function gets the replay data from the database
-
 
 def get_replays(db):
+    """ This function gets the replay data from the database"""
     replays = {}
     c = db.cursor()
     try:
@@ -297,20 +293,18 @@ def get_replays(db):
         print("Couldn't populate replay from db \'{}\': {}".format(run[5], e))
     return replays
 
-# This function gets the listing of files needed to be parsed
-
 
 def get_files(replays):
+    """This function gets the listing of files needed to be parsed"""
     try:
         files = os.listdir(replays)
         return files
     except Exception as e:
         print("Could not get replay files: {}".format(e))
 
-# This function acts as a case statement for character's formatted name because Python :)
-
 
 def get_char_name(c):
+    """This function acts as a case statement for character's formatted name because Python :)"""
     switcher = {
         0: "Cadence",
         1: "Melody",
@@ -329,10 +323,9 @@ def get_char_name(c):
     }
     return switcher.get(c, "Unknown")
 
-# This function acts as a case statement for the formatted run type because Python :)
-
 
 def get_type_name(t):
+    """This function acts as a case statement for the formatted run type because Python :)"""
     t = int(t)
     switcher = {
         1: "Zone 1",
@@ -362,10 +355,9 @@ def get_type_name(t):
 
     return switcher.get(t, "Unknown")
 
-# This function returns the zone that the replay ended on
-
 
 def get_end_zone(songs, char, t, replay):
+    """This function returns the zone that the replay ended on"""
     if not replay.amplified_full:
         print("Too lazy to code non-amplified full release")
         replay.bugged = True
@@ -399,11 +391,9 @@ def get_end_zone(songs, char, t, replay):
 
     return(replay)
 
-# This function returns the formatted run time as seen as the end screen in game
-
 
 def get_time_from_replay(ms_time):
-
+    """This function returns the formatted run time as seen as the end screen in game"""
     if ms_time < 0:
         return "00:00:00.000"
     millis = int(((ms_time/1000) % 1)*100)
@@ -418,10 +408,9 @@ def get_time_from_replay(ms_time):
 
     return time_to_return
 
-# This function returns the number of keys pressed during a run, because why not
-
 
 def get_key_presses(songs, data, replay):
+    """This function returns the number of keys pressed during a run, because why not"""
     if songs < 0:
         return 0
     keys = 0
@@ -429,11 +418,9 @@ def get_key_presses(songs, data, replay):
         keys += int(data[(i+1)*11])
     return keys
 
-# This function saves a replay to the database
-
 
 def save_run(run, db):
-
+    """This function saves a replay to the database"""
     try:
         # run_id = -1
         # bugged_id = -1
@@ -524,31 +511,29 @@ def save_run(run, db):
         print("Couldn't insert run: {}, {}/{}\n{}".format(run.f_hash,
                                                           run.folder, run.file, e))
 
-# This function outputs the replay data to a json file
-
 
 def save_to_json(replays, json_file):
+    """This function outputs the replay data to a json file"""
     try:
         if os.path.exists(json_file):
             os.remove(json_file)
         with open(json_file, 'w+') as f:
-            f.write("[\n")
-            f.write("{")
+
+            f.write("{\n")
             f.write("\"data\": [")
             c_len = 0
             for replay in replays:
                 f.write("{}{}\n".format(json.dumps(
                     replays[replay].to_json()), "," if c_len+1 < len(replays) else ""))
                 c_len += 1
-            f.write("]}]")
+            f.write("]\n}")
     except Exception as e:
         print("Couldn't save to json: {}".format(e))
 
-# This function calculates the seed based off the first floor seed
-
 
 def calculate_seed(zone_1_seed, amplified):
-    # seed.add(0x40005e47).times(0xd6ee52a).mod(0x7fffffff).mod(0x713cee3f);
+    """This function calculates the seed based off the first floor seed"""
+    # seed.add(0x40005e47).times(0xd6ee52a).mod(0x7fffffff).mod(0x713cee3f); # Stolen from Alexis :D
     add1 = int("0x40005e47", 16)
     mult1 = int("0xd6ee52a", 16)
     mod1 = int("0x7fffffff", 16)
@@ -564,10 +549,9 @@ def calculate_seed(zone_1_seed, amplified):
     else:
         print("Not calculating this seed: {}".format(zone_1_seed))
 
-# This function does all the heavy lifting and is where all replay parsing happens
-
 
 def parse_files(r_folder, r_files, all_replays, hashes, tags, db):
+    """This function does all the heavy lifting and is where all replay parsing happens"""
     for r_f in r_files:
         try:
             p_file = ParsedReplay()
@@ -639,8 +623,8 @@ def parse_files(r_folder, r_files, all_replays, hashes, tags, db):
     return all_replays
 
 
-# Pretty much everything was figured out by Grimy and/or AlexisYJ. Anything that looks complicated was them. Probably the simple stuff too :)
 def main():
+    """Pretty much everything was figured out by Grimy and/or AlexisYJ. Anything that looks complicated was them. Probably the simple stuff too :)"""
     # Grab the config data
     config = ConfigParser()
     config.read(CONFIG)
@@ -671,7 +655,7 @@ def main():
         counter += 1
         print("Looking for new replays: {}".format(counter))
         time.sleep(30)
-        
+
 
 if __name__ == "__main__":
     sys.exit(main())
