@@ -4,7 +4,7 @@ $(function(){
     })
         .done(function(data){
             // do a bunch of stuff here
-            data = data[0]
+            //data = data
             totalWins = 0;
             totalRuns = 0;
             headers = [
