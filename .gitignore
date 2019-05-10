@@ -127,3 +127,4 @@ config.ini
 *.sqlite
 .vscode/settings.json
 data.json
+HIDE/*
