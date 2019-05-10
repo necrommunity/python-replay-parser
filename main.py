@@ -602,7 +602,7 @@ def parse_files(r_folder, r_files, all_replays, hashes, tags, db):
             elif char1 == 6:
                 win = True if songs == 15 and len(
                     split_data[171]) > 0 else False
-            if not coop:
+            if not coop and run_hash not in hashes:
                 p_file.version = version
                 p_file.amplified = amp
                 p_file.amplified_full = amp_full
@@ -626,13 +626,11 @@ def parse_files(r_folder, r_files, all_replays, hashes, tags, db):
                 p_file.imported_date = int(datetime.now().timestamp())
                 # print(p_file.__dict__)
                 # print(p_file)
-                if run_hash not in hashes:
-
-                    save_run(p_file, db)
-                    all_replays[p_file.f_hash] = p_file
-                    hashes.append(run_hash)
-            else:
-                print("Too lazy to code in co-op runs")
+                save_run(p_file, db)
+                all_replays[p_file.f_hash] = p_file
+                hashes.append(run_hash)
+            # else:
+            #     print("Too lazy to code in co-op runs")
 
         except Exception as e:
             print("Couldn't parse file: {} -> {}".format(r_f, e))
@@ -650,7 +648,7 @@ def main():
     except KeyboardInterrupt:
         t._stop()
     webbrowser.open("http://localhost:{}/view_runs.html".format(PORT))
-    
+
     """Pretty much everything was figured out by Grimy and/or AlexisYJ. Anything that looks complicated was them. Probably the simple stuff too :)"""
     # Grab the config data
     config = ConfigParser()
