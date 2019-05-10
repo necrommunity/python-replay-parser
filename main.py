@@ -14,6 +14,14 @@ from dateutil import parser
 from datetime import datetime
 import json
 
+import threading
+import http.server
+import socketserver
+import webbrowser
+
+PORT = 8080
+Handler = http.server.SimpleHTTPRequestHandler
+
 CONFIG = "config.ini"
 
 
@@ -91,6 +99,12 @@ class ParsedReplay:
             'importDate': self.imported_date
         }
         return j
+
+def start_server():
+    """ Start an http.server thread """
+    httpd = socketserver.TCPServer(("", PORT), Handler)
+    print("HTTP Server Started", PORT)
+    httpd.serve_forever()
 
 
 def setup_database(db):
@@ -627,6 +641,16 @@ def parse_files(r_folder, r_files, all_replays, hashes, tags, db):
 
 
 def main():
+    
+    # Start a local web server on PORT
+    try:
+        t = threading.Thread(target=start_server)
+        t.setDaemon(True)
+        t.start()
+    except KeyboardInterrupt:
+        t._stop()
+    webbrowser.open("http://localhost:{}/view_runs.html".format(PORT))
+    
     """Pretty much everything was figured out by Grimy and/or AlexisYJ. Anything that looks complicated was them. Probably the simple stuff too :)"""
     # Grab the config data
     config = ConfigParser()
