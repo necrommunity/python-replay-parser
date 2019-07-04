@@ -16,10 +16,10 @@ Copy the `config_template.ini` as `config.ini`. Update any of the defaults if yo
 2. Add older replay parsing, since it only parses the Amplified full release correctly
 3. Add in co-op replays, but probably not.
 4. Probably a ton of cleanup at some point
-5. Since Chrome is bad you can't run the html files locally, so you'll have to start a webserver some how. Easiest way is to have python installed
-   1. Python 2.7 -- No idea
-   2. Python 3.7.3 -- `cd python-replay-parser; python -m http.server`
-   3. Once started, open `http://localhost:8000/view_runs.html`
+5. ~~Since Chrome is bad you can't run the html files locally, so you'll have to start a webserver some how. Easiest way is to have python installed~~
+   1. ~~Python 2.7 -- No idea~~
+   2. ~~Python 3.7.3 -- `cd python-replay-parser; python -m http.server`~~
+   3. ~~Once started, open `http://localhost:8000/view_runs.html`~~
 
 ## Replay File Information
 For ease of viewing, created a new line for each "\n" present in the replay data. Example is a run that ended in 1-3 on Bard
