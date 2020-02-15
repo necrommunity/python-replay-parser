@@ -128,3 +128,4 @@ config.ini
 .vscode/settings.json
 data.json
 HIDE/*
+output/*
