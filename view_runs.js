@@ -69,9 +69,5 @@ $(function(){
             });
             $('#wins').html("Total Wins: " + totalWins);
             $('#runs').html("Total Runs: " + totalRuns);
-        })
-
-        
-
-
+        });
 });

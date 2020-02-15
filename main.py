@@ -19,6 +19,8 @@ import http.server
 import socketserver
 import webbrowser
 
+import api
+
 PORT = 8080
 Handler = http.server.SimpleHTTPRequestHandler
 
@@ -58,6 +60,8 @@ class ParsedReplay:
         self.bugged = False
         self.bugged_reason = ""
         self.imported_date = ""
+        self.weapon_type = 1
+        self.weapon_class = 1
 
     def __str__(self):
         """A simple way to output useful data when debugging :)"""
@@ -96,7 +100,9 @@ class ParsedReplay:
             'win': self.win,
             'bugged': self.bugged,
             'buggedReason': self.bugged_reason,
-            'importDate': self.imported_date
+            'importDate': self.imported_date,
+            'weaponType': self.weapon_type,
+            'weaponClass': self.weapon_class
         }
         return j
 
@@ -150,7 +156,23 @@ def setup_database(db):
             f_killed_by    TEXT,
             key_presses    INTEGER,
             score          INTEGER,
-            imported_date  INTEGER
+            imported_date  INTEGER,
+            weapon_type    INTEGER,
+            weapon_class,  INTEGER
+        );
+        """
+        weapon_type = """
+            CREATE TABLE IF NOT EXISTS weapon_type (
+            id             INTEGER  PRIMARY KEY ASC ON CONFLICT ABORT AUTOINCREMENT NOT NULL ON CONFLICT ABORT UNIQUE ON CONFLICT ABORT,
+            name           TEXT
+        );
+        """
+
+        weapon_class = """
+            CREATE TABLE IF NOT EXISTS weapon_class (
+            id             INTEGER  PRIMARY KEY ASC ON CONFLICT ABORT AUTOINCREMENT NOT NULL ON CONFLICT ABORT UNIQUE ON CONFLICT ABORT,
+            name           TEXT,
+            damage         INTEGEER
         );
         """
 
