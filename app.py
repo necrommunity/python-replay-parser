@@ -19,13 +19,10 @@ import http.server
 import socketserver
 import webbrowser
 
-import api
+from config import Config as app_config
 
 PORT = 8080
 Handler = http.server.SimpleHTTPRequestHandler
-
-CONFIG = "config.ini"
-
 
 class ParsedReplay:
     """ParsedReplay holds all needed information about each run that has been parsed"""
@@ -107,14 +104,18 @@ class ParsedReplay:
         return j
 
 def start_server():
-    """ Start an http.server thread """
+    """Start an http.server thread"""
     httpd = socketserver.TCPServer(("", PORT), Handler)
     print("HTTP Server Started", PORT)
     httpd.serve_forever()
 
 
 def setup_database(db):
-    """This function setups up the database if it doesn't exist"""
+    """This function builds a database if one is not present
+
+    Arguments:
+        db {sqlite} -- SQLite db object
+    """
     try:
         conn = sqlite3.connect(db)
 
@@ -161,20 +162,6 @@ def setup_database(db):
             weapon_class,  INTEGER
         );
         """
-        weapon_type = """
-            CREATE TABLE IF NOT EXISTS weapon_type (
-            id             INTEGER  PRIMARY KEY ASC ON CONFLICT ABORT AUTOINCREMENT NOT NULL ON CONFLICT ABORT UNIQUE ON CONFLICT ABORT,
-            name           TEXT
-        );
-        """
-
-        weapon_class = """
-            CREATE TABLE IF NOT EXISTS weapon_class (
-            id             INTEGER  PRIMARY KEY ASC ON CONFLICT ABORT AUTOINCREMENT NOT NULL ON CONFLICT ABORT UNIQUE ON CONFLICT ABORT,
-            name           TEXT,
-            damage         INTEGEER
-        );
-        """
 
         run_tag = """
             CREATE TABLE IF NOT EXISTS run_tag (
@@ -193,6 +180,57 @@ def setup_database(db):
         );
         """
 
+        weapon_type = """
+            CREATE TABLE IF NOT EXISTS weapon_type (
+            id             INTEGER  PRIMARY KEY ASC ON CONFLICT ABORT AUTOINCREMENT NOT NULL ON CONFLICT ABORT UNIQUE ON CONFLICT ABORT,
+            name           TEXT
+            display_name   TEXT
+        );
+        """
+
+        weapon_class = """
+            CREATE TABLE IF NOT EXISTS weapon_class (
+            id             INTEGER  PRIMARY KEY ASC ON CONFLICT ABORT AUTOINCREMENT NOT NULL ON CONFLICT ABORT UNIQUE ON CONFLICT ABORT,
+            name           TEXT,
+            display_name   TEXT,
+            damage         INTEGER,
+            special        TEXT
+        );
+        """
+
+        weapon_type_data = [
+            ("dagger", "Dagger"),
+            ("spear", "Spear"),
+            ("longsword", "Longsword"),
+            ("rapier", "Rapier"),
+            ("cat", "Cat"),
+            ("broadsword", "Broadsword"),
+            ("whip", "Whip"),
+            ("flail", "Flail"),
+            ("axe", "Axe"),
+            ("rifle", "Rifle"),
+            ("blunderbuss", "Blunderbuss"),
+            ("bow", "Bow"),
+            ("crossbow", "Crossbow"),
+            ("cutlass", "Cutlass"),
+            ("harp", "Harp"),
+            ("warhammer", "Warhammer"),
+            ("staff", "Staff")
+        ]
+
+        weapon_class_data = [
+            ("base", "Base", 1, ""),
+            ("gold", "Gold", 1, "Infinite damage after picking up gold"),
+            ("blood", "Blood", 1, "Infinite damage at half or less red heart"),
+            ("titanium", "Titanium", 2, ""),
+            ("obsidian", "Obsidian", 3, "Damage based on coin multiplier"),
+            ("glass", "Glass", 4, ""),
+            ("electric", "Electric", 2, "Infinite damage while standing on Zone 5 wire"),
+            ("frost", "Frost", 1, "Freezes enemy on first hit, infinite damage to frozen enemies"),
+            ("jeweled", "Jeweled", 5, ""),
+            ("phasing", "Phasing", 2, "Phasing damage")
+
+        ]
         tag_data = [
             ("Win", "Green", "#3CB371"),
             ("Death By Enemy", "Red", "#FA8072"),
@@ -210,7 +248,16 @@ def setup_database(db):
             c.execute(bugged)
             c.execute(run_tag)
             c.executemany(
-                'INSERT INTO tag (name, color, color_hex) values (?, ?, ?)', tag_data)
+                'INSERT INTO tag (name, color, color_hex) values (?, ?, ?)', tag_data
+            )
+            c.execute(weapon_type)
+            c.executemany(
+                'INSERT INTO weapon_type (name, display_name) values (?, ?)', weapon_type_data
+            )
+            c.execute(weapon_class)
+            c.executemany(
+                'INSERT INTO weapon_class (name, display_name, damage, special) values (?, ?, ?, ?)', weapon_class_data
+            )
             conn.commit()
 
         return conn
@@ -220,20 +267,22 @@ def setup_database(db):
         sys.exit()
 
 
-def setup_replay_folder(r_folder, config):
+def setup_replay_folder(r_folder, app_config):
     """This function configures where the replays are located if not default and writes it to the config file"""
     if not os.path.exists(r_folder):
         try:
             print("Getting replay folder")
             folder = filedialog.askdirectory()
-            config.set('DEFAULT', 'REPLAY_FOLDER', folder)
-            with open(CONFIG, 'w') as cfg:
-                config.write(cfg)
-            return folder
+            app_config.replay_folder = folder
+            # config.set('DEFAULT', 'REPLAY_FOLDER', folder)
+            # with open(CONFIG, 'w') as cfg:
+            #     config.write(cfg)
+            # return folder
         except Exception as e:
             print("Could not open folder: {}".format(e))
+            sys.exit("Need the folder, exiting")
     else:
-        return r_folder
+        return r_folder, app_config
 
 
 def get_run_hashes(db):
@@ -459,16 +508,16 @@ def get_key_presses(songs, data, replay):
 
 
 def save_run(run, db):
-    """This function saves a replay to the database"""
-    try:
-        # run_id = -1
-        # bugged_id = -1
-        # tag_id = -1
-        # runtag_id = -1
+    """This function saves a replay to the database
 
+    Arguments:
+        run {ParsedReplay} -- A single ParsedReplay instance
+        db {sqlite} -- SQLite db object
+    """
+    try:
         c = db.cursor()
         run_sql = """
-        INSERT INTO run 
+        INSERT INTO run
         (
             version,
             amplified,
@@ -547,12 +596,16 @@ def save_run(run, db):
 
         db.commit()
     except Exception as e:
-        print("Couldn't insert run: {}, {}/{}\n{}".format(run.f_hash,
-                                                          run.folder, run.file, e))
+        print(f"Couldn't insert run: {run.f_hash}, {run.folder}/{run.file}\n{e}")
 
 
 def save_to_json(replays, json_file):
-    """This function outputs the replay data to a json file"""
+    """This function outputs the replay data to a json file
+
+    Arguments:
+        replays {dict} -- Dictionary of replay files
+        json_file {str} -- Path to the json file for output
+    """
     try:
         if os.path.exists(json_file):
             os.remove(json_file)
@@ -571,7 +624,16 @@ def save_to_json(replays, json_file):
 
 
 def calculate_seed(zone_1_seed, amplified):
-    """This function calculates the seed based off the first floor seed"""
+    """This function calculates the seed based off the first floor seed
+
+    Arguments:
+        zone_1_seed {int} -- Seed number found from 1-1 seed in the replay
+        amplified {bool} -- Bool if amplified dlc is active
+
+    Returns:
+        int -- Returns the calculated run seed
+        bool -- Bool to show if we found a seed successfully
+    """
     # seed.add(0x40005e47).times(0xd6ee52a).mod(0x7fffffff).mod(0x713cee3f); # Stolen from Alexis :D
     add1 = int("0x40005e47", 16)
     mult1 = int("0xd6ee52a", 16)
@@ -584,13 +646,27 @@ def calculate_seed(zone_1_seed, amplified):
         zone_1_seed %= mod1
         seed = zone_1_seed % mod2
         #print("Seed: {}".format(seed))
-        return seed
+        return seed, True
     else:
-        print("Not calculating this seed: {}".format(zone_1_seed))
+        print(f"Not calculating this seed: {zone_1_seed}")
+        return 0, False
 
 
 def parse_files(r_folder, r_files, all_replays, hashes, tags, db):
-    """This function does all the heavy lifting and is where all replay parsing happens"""
+    """This function does all the heavy lifting and is where all replay parsing happens
+
+    Arguments:
+        r_folder {str} -- Path to the replay folder
+        r_files {list} -- List of replay files found in the replay folder
+        all_replays {dict} -- Dictionary of all replay data
+        hashes {list} -- List of hashes for each file
+        tags {dict} -- Dictionary of tags from the database
+        db {sqlite} -- DB object
+
+    Returns:
+        dict -- Dictionary of all replay data
+    """
+
     for r_f in r_files:
         try:
             p_file = ParsedReplay()
@@ -661,7 +737,8 @@ def parse_files(r_folder, r_files, all_replays, hashes, tags, db):
 
 
 def main():
-    
+    """Clearly this does nothing important"""
+
     # Start a local web server on PORT
     try:
         t = threading.Thread(target=start_server)
@@ -669,18 +746,12 @@ def main():
         t.start()
     except KeyboardInterrupt:
         t._stop()
-    webbrowser.open("http://localhost:{}/view_runs.html".format(PORT))
+    webbrowser.open(f"http://localhost:{PORT}/view_runs.html")
 
     """Pretty much everything was figured out by Grimy and/or AlexisYJ. Anything that looks complicated was them. Probably the simple stuff too :)"""
-    # Grab the config data
-    config = ConfigParser()
-    config.read(CONFIG)
-    dbfile = config.get('DEFAULT', 'DATABASE_FILE')
-    replay_folder = config.get('DEFAULT', 'REPLAY_FOLDER')
-    json_file = config.get('DEFAULT', 'JSON_FILE')
 
     # Setup the db connection
-    db = setup_database(dbfile)
+    db = setup_database(app_config.database_file)
 
     # Get hashes for runs from the db
     run_hashes = get_run_hashes(db)
@@ -688,19 +759,19 @@ def main():
     replays = get_replays(db)
 
     # Setup the replay folder/files
-    replay_folder = setup_replay_folder(replay_folder, config)
+    replay_folder, app_config = setup_replay_folder(app_config.replay_folder, app_config)
 
     # Loop this forever
     counter = 0
     while True:
-        replay_files = get_files(replay_folder)
+        replay_files = get_files(app_config.replay_folder)
 
         # Parse the replay files
-        replays = parse_files(replay_folder, replay_files,
+        replays = parse_files(app_config.replay_folder, replay_files,
                               replays, run_hashes, tags, db)
-        save_to_json(replays, json_file)
+        save_to_json(replays, app_config.json_file)
         counter += 1
-        print("Looking for new replays: {}".format(counter))
+        print(f"Looking for new replays: {counter}")
         time.sleep(30)
 
 
