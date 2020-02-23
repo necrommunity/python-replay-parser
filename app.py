@@ -4,7 +4,6 @@ import os
 import sqlite3
 import sys
 import time
-from configparser import ConfigParser
 try:
     from tk import filedialog
 except:
@@ -15,14 +14,17 @@ from datetime import datetime
 import json
 
 import threading
-import http.server
-import socketserver
 import webbrowser
 
-from config import Config as app_config
+from flask import Flask, jsonify
+
+
+app = Flask(__name__,static_url_path='')
+app.config.from_object("config.DevelopmentConfig")
+
+import routes
 
 PORT = 8080
-Handler = http.server.SimpleHTTPRequestHandler
 
 class ParsedReplay:
     """ParsedReplay holds all needed information about each run that has been parsed"""
@@ -104,20 +106,17 @@ class ParsedReplay:
         return j
 
 def start_server():
-    """Start an http.server thread"""
-    httpd = socketserver.TCPServer(("", PORT), Handler)
-    print("HTTP Server Started", PORT)
-    httpd.serve_forever()
+    """ This function starts the Flask server"""    
+    app.run(port=PORT)
 
-
-def setup_database(db):
+def setup_database(conn):
     """This function builds a database if one is not present
 
     Arguments:
         db {sqlite} -- SQLite db object
     """
     try:
-        conn = sqlite3.connect(db)
+
 
         bugged = """
             CREATE TABLE IF NOT EXISTS bugged (
@@ -674,15 +673,18 @@ def parse_files(r_folder, r_files, all_replays, hashes, tags, db):
             split_name = r_f.split(".")[0].split("_")
             with open("{}/{}".format(r_folder, r_f)) as r:
                 data = r.read()
+            
             split_data = data.split("\\n")
-            version = int(split_name[0])
+            version = int(split_data[0])
             amp = True if version > 75 else False
             amp_full = True if version > 84 else False
-            dt = parser.parse("{} {}".format(
+            try:
+                dt = parser.parse("{} {}".format(
                 "/".join(split_name[3:6:]), ":".join(split_name[6:9])))
-            f_dt = "{}/{}/{} {}:{}".format(dt.year,
-                                           dt.month, dt.day, dt.hour, dt.minute)
-            t = int(split_name[9])
+            except:
+                dt = datetime.now()
+            f_dt = f"{dt.year}/{dt.month}/{dt.day} {dt.hour}:{dt.minute}"
+            t = int(split_data[1])
             coop = True if int(split_data[8]) > 1 else False
             char1 = int(split_data[12].split("|")[0])
             players = int(split_data[8])
@@ -714,7 +716,7 @@ def parse_files(r_folder, r_files, all_replays, hashes, tags, db):
                 p_file.char1 = char1
                 p_file.f_char1 = get_char_name(char1)
                 p_file.players = players
-                p_file.seed = calculate_seed(seed, amp)
+                p_file.seed, result = calculate_seed(seed, amp)
                 p_file.songs = songs
                 p_file.run_time = run_time
                 p_file.f_run_time = get_time_from_replay(run_time)
@@ -723,7 +725,7 @@ def parse_files(r_folder, r_files, all_replays, hashes, tags, db):
                 p_file.key_presses = get_key_presses(songs, split_data, p_file)
                 p_file.imported_date = int(datetime.now().timestamp())
                 # print(p_file.__dict__)
-                # print(p_file)
+                print(p_file)
                 save_run(p_file, db)
                 all_replays[p_file.f_hash] = p_file
                 hashes.append(run_hash)
@@ -738,7 +740,6 @@ def parse_files(r_folder, r_files, all_replays, hashes, tags, db):
 
 def main():
     """Clearly this does nothing important"""
-
     # Start a local web server on PORT
     try:
         t = threading.Thread(target=start_server)
@@ -746,12 +747,15 @@ def main():
         t.start()
     except KeyboardInterrupt:
         t._stop()
-    webbrowser.open(f"http://localhost:{PORT}/view_runs.html")
+
+    webbrowser.open(f"http://localhost:{PORT}/")
 
     """Pretty much everything was figured out by Grimy and/or AlexisYJ. Anything that looks complicated was them. Probably the simple stuff too :)"""
+    app_config = app.config
 
     # Setup the db connection
-    db = setup_database(app_config.database_file)
+    from db import conn
+    db = setup_database(conn)
 
     # Get hashes for runs from the db
     run_hashes = get_run_hashes(db)
@@ -759,21 +763,22 @@ def main():
     replays = get_replays(db)
 
     # Setup the replay folder/files
-    replay_folder, app_config = setup_replay_folder(app_config.replay_folder, app_config)
+    replay_folder, app_config = setup_replay_folder(app_config["REPLAY_FOLDER"], app_config)
 
     # Loop this forever
     counter = 0
     while True:
-        replay_files = get_files(app_config.replay_folder)
+        replay_files = get_files(replay_folder)
 
         # Parse the replay files
-        replays = parse_files(app_config.replay_folder, replay_files,
+        replays = parse_files(replay_folder, replay_files,
                               replays, run_hashes, tags, db)
-        save_to_json(replays, app_config.json_file)
+        # save_to_json(replays, app_config["JSON_FILE"]) # No longer needed
         counter += 1
         print(f"Looking for new replays: {counter}")
         time.sleep(30)
 
 
 if __name__ == "__main__":
+
     sys.exit(main())

@@ -1,0 +1,59 @@
+<html>
+<head>
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css" rel="stylesheet" >
+    <link href="https://cdn.datatables.net/1.10.20/css/jquery.dataTables.min.css" rel="stylesheet">
+</head>
+
+<body>
+    <div id="total_wins">Total Wins: {{ total_wins }}</div>
+    <div id="total_runs">Total Runs: {{ total_runs }}</div>
+    <div id="new_table">
+        <table id="main_table" class="table table-striped table-bordered table-sm table-responsibe-sm table-hover">
+            <thead>
+                <tr class="th th-dark thead-dark">
+                    <th class="th date" id="th-date">Date</th>
+                    <th class="th char" id="th-char">Character</th>
+                    <th class="th seed" id="th-seed">Seed</th>
+                    <th class="th end-zone" id="th-end-zone">Ending Zone</th>
+                    <th class="th run-time" id="th-run-time">Run Time</th>
+                    <th class="th win" id="th-win">Win</th>
+                    <th class="th key-presses" id="th-key-presses">Key Presses</th>
+                    <th class="th songs" id="th-songs">Songs</th>
+                    <th class="th file" id="th-file">Filename</th>
+                </tr>
+            </thead>
+            <tfoot>
+
+            </tfoot>
+            <tbody>
+            {% for x in j_data: %}
+
+                <tr class="tr" id="tr-{{ x.hash }}">
+                    <td class="td date" id="td-{{ x.hash }}-date">{{ x.date }}</td>
+                    <td class="td char" id="td-{{ x.hash }}-char">{{ x.char_f }}</td>
+                    <td class="td seed" id="td-{{ x.hash }}-seed">{{ x.seed }}</td>
+                    <td class="td end-zone" id="td-{{ x.hash }}-end-zone">{{ x.end_zone_f }}</td>
+                    <td class="td run-time" id="td-{{ x.hash }}-run-time">{{ x.time_f }}</td>
+                    {% if x.win == True %}
+                        <td class="td win bg-success" id="td-{{ x.hash }}-win">Yes</td>
+                    {% else %}
+                        <td class="td win bg-danger" id="td-{{ x.hash }}-win">No</td>
+                    {% endif %}
+                    <td class="td key-presses" id="td-{{ x.hash }}-key-presses">{{ x.key_presses }}</td>
+                    <td class="td songs" id="td-{{ x.hash }}-">{{ x.songs }}</td>
+                    <td class="td file" id="td-{{ x.hash }}-file">{{ x.file }}</td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <div id="content">
+
+    </div>
+    <script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.24.0/moment.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js"></script>
+    <script src="https://cdn.datatables.net/1.10.20/js/jquery.dataTables.min.js"></script>
+    <script src={{ url_for('static',filename='js/stats.js') }}></script>
+</body>
+</html>
