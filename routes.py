@@ -8,6 +8,17 @@ import sqlite3
 def home_page():
     total_wins = 0
     total_runs = 0
+    j_head = {
+        "date": "Date",
+        "char": "Character",
+        "seed": "Seed",
+        "ending-zone": "Ending Zone",
+        "run-time": "Run Time",
+        "win": "Win",
+        "key-presses": "Key Presses",
+        "songs": "Songs",
+        "file": "Filename"
+    }
     json_data = api_stats().get_json()["stats"]
     if len(json_data) > 0:
         total_runs = len(json_data)
@@ -16,6 +27,7 @@ def home_page():
                 total_wins += 1
     return render_template(
         "stats.html",
+        j_head=j_head,
         j_data=json_data,
         total_runs=total_runs,
         total_wins=total_wins

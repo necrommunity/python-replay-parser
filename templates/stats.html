@@ -13,23 +13,15 @@
         <table id="main_table" class="table table-striped table-bordered table-sm table-responsibe-sm table-hover">
             <thead>
                 <tr class="th th-dark thead-dark">
-                    <th class="th date" id="th-date">Date</th>
-                    <th class="th char" id="th-char">Character</th>
-                    <th class="th seed" id="th-seed">Seed</th>
-                    <th class="th end-zone" id="th-end-zone">Ending Zone</th>
-                    <th class="th run-time" id="th-run-time">Run Time</th>
-                    <th class="th win" id="th-win">Win</th>
-                    <th class="th key-presses" id="th-key-presses">Key Presses</th>
-                    <th class="th songs" id="th-songs">Songs</th>
-                    <th class="th file" id="th-file">Filename</th>
+                    {% for h in j_head: %}
+                        <th class="th {{ h }}" id="th-{{ h }}">{{ j_head[h] }}</th>
+                    {% endfor %}
                 </tr>
             </thead>
             <tfoot>
-
             </tfoot>
             <tbody>
             {% for x in j_data: %}
-
                 <tr class="tr" id="tr-{{ x.hash }}">
                     <td class="td date" id="td-{{ x.hash }}-date">{{ x.date }}</td>
                     <td class="td char" id="td-{{ x.hash }}-char">{{ x.char_f }}</td>
